@@ -3,6 +3,7 @@ from fastapi.responses import Response
 from http import HTTPStatus
 import httpx
 import logging
+from kubernetes_helper import list_services_for_labels
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -13,10 +14,19 @@ logger.addHandler(console_handler)
 
 app = FastAPI()
 
-backend_servers = {
-    "TheBloke/Llama-2-13B-chat-GPTQ": "http://10.104.125.148:8000",
-    "TheBloke/Llama-2-7B-chat-GPTQ": "http://10.97.24.66:8000",
-}
+#    "TheBloke/Llama-2-13B-chat-GPTQ": "http://10.104.125.148:8000",
+#    "TheBloke/Llama-2-7B-chat-GPTQ": "http://10.97.24.66:8000",
+
+# Define the namespace
+namespace = "default"  # Namespace to query
+
+# Define label filters
+label_filters = ["app=vllm-llama-7b-gptq", "app=vllm-llama-13b-gptq", "app=vllm-llama-7b"]
+model_label = "model_name"
+model_family_label="model_family"
+# define the services and model mapping
+backend_servers = {}
+
 
 
 async def proxy(request):
@@ -72,4 +82,13 @@ async def post_completions(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
+    # add to backend_servers
+    servers = list_services_for_labels(namespace, label_filters, additional_labels=[model_label, model_family_label])
+    for server in servers:
+        # use model_name and model_family labels as key and IP and port as value in the backend_servers dictionary
+        key = server["additional_labels"][model_family_label] + "/" + server["additional_labels"][model_label]
+        value = "http://" + server["ip"] + ":8000"
+        backend_servers[key] = value
+    logger.info(f"backend_servers: {backend_servers}")
+
     uvicorn.run(app, host="127.0.0.1", port=8000)
