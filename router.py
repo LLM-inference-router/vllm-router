@@ -21,7 +21,11 @@ app = FastAPI()
 namespace = "default"  # Namespace to query
 
 # Define label filters
-label_filters = ["app=vllm-llama-7b-gptq", "app=vllm-llama-13b-gptq", "app=vllm-llama-7b"]
+# Sample file format for label_filters.txt:
+# Each line in the file should contain a single label filter
+# "app=vllm-llama-7b-gptq", "app=vllm-llama-13b-gptq", "app=vllm-llama-7b"
+with open("/etc/vllm-router/label_filters.txt", "r") as file:
+    label_filters = file.read().splitlines()
 model_label = "model_name"
 model_family_label="model_family"
 # define the services and model mapping
@@ -44,6 +48,7 @@ async def proxy(request):
         if server is None:
             raise HTTPException(status_code=400, detail="Invalid model")
         backend_url = server + request.url.path
+        logger.info(f"backend_url: {backend_url} for model {model}")
 
         if request.method == "GET":
             response = await client.get(backend_url, params=request.query_params)
@@ -91,4 +96,4 @@ if __name__ == "__main__":
         backend_servers[key] = value
     logger.info(f"backend_servers: {backend_servers}")
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

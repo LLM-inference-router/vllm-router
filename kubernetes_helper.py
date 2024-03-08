@@ -1,7 +1,7 @@
 from kubernetes import client, config
 
 # Load kubeconfig
-config.load_kube_config()
+config.load_config()
 
 # Define the namespace and labels to filter
 namespace = "default"  
