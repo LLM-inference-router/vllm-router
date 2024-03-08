@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vllm-router-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-reader
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vllm-router-sa-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-reader
+subjects:
+- kind: ServiceAccount
+  name: vllm-router-sa
+  namespace: default
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-router-config
+  namespace: default
+data:
+  label_filters.txt: |
+    app=vllm-llama-7b-gptq
+    app=vllm-llama-13b-gptq
+    app=vllm-llama-7b
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-router
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-router
+  template:
+    metadata:
+      labels:
+        app: vllm-router
+    spec:
+      serviceAccountName: vllm-router-sa 
+      containers:
+      - name: vllm-router
+        image: quay.io/llm_router/vllm-router:latest
+        imagePullPolicy: Always
+        command: ["bash", "-c"]
+        args: ["cd /app; python3 router.py"]
+        ports:
+        - containerPort: 8000
+          name: vllm-port
+        volumeMounts:
+        - name: config-volume
+          mountPath: /etc/vllm-router
+      volumes:
+      - name: config-volume
+        configMap:
+          name: vllm-router-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-router
+  name: vllm-router
+  namespace: default
+spec:
+  ports:
+    - port: 8000
+      targetPort: vllm-port
+      name: vllm-router
+  selector:
+    app: vllm-router
