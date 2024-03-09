@@ -18,7 +18,7 @@ app = FastAPI()
 #    "TheBloke/Llama-2-7B-chat-GPTQ": "http://10.97.24.66:8000",
 
 # Define the namespace
-namespace = "default"  # Namespace to query
+namespace = os.environ.get("NAMESPACE", "default")  # Namespace to query
 
 # Define label filters
 # Sample file format for label_filters.txt:

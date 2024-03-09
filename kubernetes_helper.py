@@ -4,7 +4,7 @@ from kubernetes import client, config
 config.load_config()
 
 # Define the namespace and labels to filter
-namespace = "default"  
+namespace = os.environ.get("NAMESPACE", "default")
 labels_filter = "app=myapp" 
 
 def list_services(namespace, label_filter, additional_labels):
