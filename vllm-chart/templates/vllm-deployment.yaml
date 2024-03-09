@@ -1,0 +1,47 @@
+{{- range .Values.models }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .name }}
+  namespace: {{ $.Values.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .name }}
+    spec:
+      containers:
+      - name: vllm-container-{{ .name }}
+        image: {{ .image }}
+        command:
+          {{- range .command }}
+          - {{ . | quote }}
+          {{- end }}
+        args:
+          - {{ .args | first | quote }}
+        ports:
+        - containerPort: 8000
+          name: {{ .name }}
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HF_TOKEN
+              name: huggingface-secret
+        - name: MODEL_NAME
+          value: {{ .modelName }}
+        volumeMounts:
+        - name: cache-volume
+          mountPath: /root/.cache/huggingface
+        resources:
+          {{- toYaml .resources | nindent 10 }}
+      volumes:
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: huggingface-cache-pvc-rmw
+---
+{{- end }}

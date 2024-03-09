@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-router
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.router.replicaCount }}
+  selector:
+    matchLabels:
+      app: vllm-router
+  template:
+    metadata:
+      labels:
+        app: vllm-router
+    spec:
+      serviceAccountName: vllm-router-sa
+      containers:
+      - name: vllm-router
+        image: {{ .Values.router.image }}
+        imagePullPolicy: Always
+        command: ["bash", "-c"]
+        args: ["cd /app; python3 router.py"]
+        ports:
+        - containerPort: 8000
+          name: vllm-port
+        env:
+        - name: MODELS
+          value: |
+            {{- range .Values.models }}
+            {{ .modelName }}=http://{{ .name }}.{{ $.Values.namespace }}.svc.cluster.local:8000,
+            {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-router
+  name: vllm-router
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+    - port: {{ .Values.router.service.port }}
+      targetPort: vllm-port
+      name: vllm-router
+  selector:
+    app: vllm-router

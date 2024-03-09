@@ -1,9 +1,8 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import Response
-from http import HTTPStatus
 import httpx
 import logging
-from kubernetes_helper import list_services_for_labels
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -14,31 +13,23 @@ logger.addHandler(console_handler)
 
 app = FastAPI()
 
-#    "TheBloke/Llama-2-13B-chat-GPTQ": "http://10.104.125.148:8000",
-#    "TheBloke/Llama-2-7B-chat-GPTQ": "http://10.97.24.66:8000",
-
-# Define the namespace
-namespace = "default"  # Namespace to query
-
-# Define label filters
-# Sample file format for label_filters.txt:
-# Each line in the file should contain a single label filter
-# "app=vllm-llama-7b-gptq", "app=vllm-llama-13b-gptq", "app=vllm-llama-7b"
-with open("/etc/vllm-router/label_filters.txt", "r") as file:
-    label_filters = file.read().splitlines()
-model_label = "model_name"
-model_family_label="model_family"
-# define the services and model mapping
 backend_servers = {}
 
-
+@app.on_event("startup")
+async def startup_event():
+    models = os.environ.get("MODELS", "").split(",")
+    for model in models:
+        if model:
+            model_name, model_url = model.split("=")
+            backend_servers[model_name] = model_url
+    logger.info(f"Backend servers: {backend_servers}")
 
 async def proxy(request):
     logger.info(f'Received GET request from {request.client.host}:{request.client.port}')
     json_body = await request.json()
     # don't timeout on read
     timeout = httpx.Timeout(10.0, connect=60.0, read=None, write=60.0)
-    async with httpx.AsyncClient(timeout=timeout) as client:    
+    async with httpx.AsyncClient(timeout=timeout) as client:
         # parse the json_body and and get the "model" value
         model = json_body.get("model")
         if model is None:
@@ -77,7 +68,6 @@ async def get_completions(request: Request):
 @app.post("/v1/completions")
 async def post_completions(request: Request):
     logger.info("post_completions")
-
     response_data = await proxy(request)
     return Response(
         content=response_data["content"],
@@ -87,13 +77,4 @@ async def post_completions(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    # add to backend_servers
-    servers = list_services_for_labels(namespace, label_filters, additional_labels=[model_label, model_family_label])
-    for server in servers:
-        # use model_name and model_family labels as key and IP and port as value in the backend_servers dictionary
-        key = server["additional_labels"][model_family_label] + "/" + server["additional_labels"][model_label]
-        value = "http://" + server["ip"] + ":8000"
-        backend_servers[key] = value
-    logger.info(f"backend_servers: {backend_servers}")
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

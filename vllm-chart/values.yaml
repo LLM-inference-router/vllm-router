@@ -1,0 +1,47 @@
+namespace: default
+
+models:
+  - name: vllm-llama-7b
+    image: vllm/vllm-openai:latest
+    command: ["/bin/sh", "-c"]
+    args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"]
+    modelName: "meta-llama/Llama-2-7b-chat-hf"
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+      requests:
+        nvidia.com/gpu: 1
+        cpu: 500m
+        memory: 512Mi
+
+  - name: vllm-llama-7b-gptq
+    image: vllm/vllm-openai:latest
+    command: ["/bin/sh", "-c"]
+    args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"]
+    modelName: "TheBloke/Llama-2-7B-chat-GPTQ"
+    resources:
+      limits:
+        nvidia.com/mig-2g.10gb: 1
+      requests:
+        nvidia.com/mig-2g.10gb: 1
+        cpu: 500m
+        memory: 512Mi
+
+  - name: vllm-llama-13b-gptq
+    image: vllm/vllm-openai:latest
+    command: ["/bin/sh", "-c"]
+    args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"]
+    modelName: "TheBloke/Llama-2-13B-chat-GPTQ"
+    resources:
+      limits:
+        nvidia.com/mig-3g.20gb: 1
+      requests:
+        nvidia.com/mig-3g.20gb: 1
+        cpu: 500m
+        memory: 512Mi
+
+router:
+  image: quay.io/llm_router/vllm-router:latest
+  replicaCount: 1
+  service:
+    port: 8000

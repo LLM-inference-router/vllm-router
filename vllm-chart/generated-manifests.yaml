@@ -1,0 +1,468 @@
+---
+# Source: vllm-chart/templates/rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vllm-router-sa
+  namespace: default
+---
+# Source: vllm-chart/templates/persistent-volume.yaml
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: huggingface-cache-pv-rmw
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteMany
+  storageClassName: manual
+  hostPath:
+    path: /data/huggingface-cache
+---
+# Source: vllm-chart/templates/persistent-volume-claim.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: huggingface-cache-pvc-rmw
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: manual
+---
+# Source: vllm-chart/templates/gpu-operator-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/instance: k8s
+    app.kubernetes.io/name: prometheus
+  name: prometheus-k8s-gpu-operator
+  namespace: gpu-operator
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - services
+  - endpoints
+  - pods
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - extensions
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+---
+# Source: vllm-chart/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: service-reader
+  namespace: default
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+---
+# Source: vllm-chart/templates/gpu-operator-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/component: prometheus
+    app.kubernetes.io/instance: k8s
+    app.kubernetes.io/name: prometheus
+  name: prometheus-k8s-gpu-operator
+  namespace: gpu-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: prometheus-k8s-gpu-operator
+subjects:
+- kind: ServiceAccount
+  name: prometheus-k8s
+  namespace: monitoring
+---
+# Source: vllm-chart/templates/rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: vllm-router-sa-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: service-reader
+subjects:
+- kind: ServiceAccount
+  name: vllm-router-sa
+  namespace: default
+---
+# Source: vllm-chart/templates/services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-llama-7b
+  name: vllm-llama-7b
+  namespace: default
+spec:
+  ports:
+  - port: 8000
+    targetPort: vllm-llama-7b
+    name: vllm-llama-7b
+  selector:
+    app: vllm-llama-7b
+---
+# Source: vllm-chart/templates/services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-llama-7b-gptq
+  name: vllm-llama-7b-gptq
+  namespace: default
+spec:
+  ports:
+  - port: 8000
+    targetPort: vllm-llama-7b-gptq
+    name: vllm-llama-7b-gptq
+  selector:
+    app: vllm-llama-7b-gptq
+---
+# Source: vllm-chart/templates/services.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-llama-13b-gptq
+  name: vllm-llama-13b-gptq
+  namespace: default
+spec:
+  ports:
+  - port: 8000
+    targetPort: vllm-llama-13b-gptq
+    name: vllm-llama-13b-gptq
+  selector:
+    app: vllm-llama-13b-gptq
+---
+# Source: vllm-chart/templates/vllm-router.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-router
+  name: vllm-router
+  namespace: default
+spec:
+  ports:
+    - port: 8000
+      targetPort: vllm-port
+      name: vllm-router
+  selector:
+    app: vllm-router
+---
+# Source: vllm-chart/templates/vllm-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-llama-7b
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-llama-7b
+  template:
+    metadata:
+      labels:
+        app: vllm-llama-7b
+    spec:
+      containers:
+      - name: vllm-container-vllm-llama-7b
+        image: vllm/vllm-openai:latest
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"
+        ports:
+        - containerPort: 8000
+          name: vllm-llama-7b
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HF_TOKEN
+              name: huggingface-secret
+        - name: MODEL_NAME
+          value: meta-llama/Llama-2-7b-chat-hf
+        volumeMounts:
+        - name: cache-volume
+          mountPath: /root/.cache/huggingface
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+          requests:
+            cpu: 500m
+            memory: 512Mi
+            nvidia.com/gpu: 1
+      volumes:
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: huggingface-cache-pvc-rmw
+---
+# Source: vllm-chart/templates/vllm-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-llama-7b-gptq
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-llama-7b-gptq
+  template:
+    metadata:
+      labels:
+        app: vllm-llama-7b-gptq
+    spec:
+      containers:
+      - name: vllm-container-vllm-llama-7b-gptq
+        image: vllm/vllm-openai:latest
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"
+        ports:
+        - containerPort: 8000
+          name: vllm-llama-7b-gptq
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HF_TOKEN
+              name: huggingface-secret
+        - name: MODEL_NAME
+          value: TheBloke/Llama-2-7B-chat-GPTQ
+        volumeMounts:
+        - name: cache-volume
+          mountPath: /root/.cache/huggingface
+        resources:
+          limits:
+            nvidia.com/mig-2g.10gb: 1
+          requests:
+            cpu: 500m
+            memory: 512Mi
+            nvidia.com/mig-2g.10gb: 1
+      volumes:
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: huggingface-cache-pvc-rmw
+---
+# Source: vllm-chart/templates/vllm-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-llama-13b-gptq
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-llama-13b-gptq
+  template:
+    metadata:
+      labels:
+        app: vllm-llama-13b-gptq
+    spec:
+      containers:
+      - name: vllm-container-vllm-llama-13b-gptq
+        image: vllm/vllm-openai:latest
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"
+        ports:
+        - containerPort: 8000
+          name: vllm-llama-13b-gptq
+        env:
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: HF_TOKEN
+              name: huggingface-secret
+        - name: MODEL_NAME
+          value: TheBloke/Llama-2-13B-chat-GPTQ
+        volumeMounts:
+        - name: cache-volume
+          mountPath: /root/.cache/huggingface
+        resources:
+          limits:
+            nvidia.com/mig-3g.20gb: 1
+          requests:
+            cpu: 500m
+            memory: 512Mi
+            nvidia.com/mig-3g.20gb: 1
+      volumes:
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: huggingface-cache-pvc-rmw
+---
+# Source: vllm-chart/templates/vllm-router.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-router
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vllm-router
+  template:
+    metadata:
+      labels:
+        app: vllm-router
+    spec:
+      serviceAccountName: vllm-router-sa
+      containers:
+      - name: vllm-router
+        image: quay.io/llm_router/vllm-router:latest
+        imagePullPolicy: Always
+        command: ["bash", "-c"]
+        args: ["cd /app; python3 router.py"]
+        ports:
+        - containerPort: 8000
+          name: vllm-port
+        env:
+        - name: MODELS
+          value: |
+            meta-llama/Llama-2-7b-chat-hf=http://vllm-llama-7b.default.svc.cluster.local:8000,
+            TheBloke/Llama-2-7B-chat-GPTQ=http://vllm-llama-7b-gptq.default.svc.cluster.local:8000,
+            TheBloke/Llama-2-13B-chat-GPTQ=http://vllm-llama-13b-gptq.default.svc.cluster.local:8000,
+---
+# Source: vllm-chart/templates/gpu-operator-service-monitor.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: gpu-operator
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 5s
+    port: gpu-metrics
+    relabelings:
+    - action: replace
+      regex: (.*)
+      replacement: $1
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: instance
+    scheme: http
+  jobLabel: app.kubernetes.io/name
+  namespaceSelector:
+    matchNames:
+    - gpu-operator
+  selector:
+    matchLabels:
+      app: nvidia-dcgm-exporter
+---
+# Source: vllm-chart/templates/services.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-service-monitor-vllm-llama-7b
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 15s
+    port: vllm-llama-7b
+    relabelings:
+    - action: replace
+      regex: (.*)
+      replacement: $1
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: instance
+    scheme: http
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app: vllm-llama-7b
+  namespaceSelector:
+    matchNames:
+    - default
+---
+# Source: vllm-chart/templates/services.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-service-monitor-vllm-llama-7b-gptq
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 15s
+    port: vllm-llama-7b-gptq
+    relabelings:
+    - action: replace
+      regex: (.*)
+      replacement: $1
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: instance
+    scheme: http
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app: vllm-llama-7b-gptq
+  namespaceSelector:
+    matchNames:
+    - default
+---
+# Source: vllm-chart/templates/services.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: vllm-service-monitor-vllm-llama-13b-gptq
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 15s
+    port: vllm-llama-13b-gptq
+    relabelings:
+    - action: replace
+      regex: (.*)
+      replacement: $1
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: instance
+    scheme: http
+  jobLabel: app.kubernetes.io/name
+  selector:
+    matchLabels:
+      app: vllm-llama-13b-gptq
+  namespaceSelector:
+    matchNames:
+    - default
