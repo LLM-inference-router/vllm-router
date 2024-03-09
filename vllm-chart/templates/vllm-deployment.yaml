@@ -39,4 +39,5 @@ spec:
       - name: cache-volume
         persistentVolumeClaim:
           claimName: huggingface-cache-pvc-rmw
+---
 {{- end }}

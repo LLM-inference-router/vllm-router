@@ -4,8 +4,6 @@ kind: Service
 metadata:
   labels:
     app: {{ .name }}
-    model_family: {{ .modelName | split "/" | first }}
-    model_name: {{ .modelName | split "/" | last }}
   name: {{ .name }}
   namespace: {{ $.Values.namespace }}
 spec:
@@ -42,17 +40,3 @@ spec:
     - {{ $.Values.namespace }}
 ---
 {{- end }}
-apiVersion: v1
-kind: Service
-metadata:
-  labels:
-    app: vllm-router
-  name: vllm-router
-  namespace: {{ .Values.namespace }}
-spec:
-  ports:
-    - port: {{ .Values.router.service.port }}
-      targetPort: vllm-port
-      name: vllm-router
-  selector:
-    app: vllm-router

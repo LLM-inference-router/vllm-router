@@ -23,10 +23,24 @@ spec:
         ports:
         - containerPort: 8000
           name: vllm-port
-        volumeMounts:
-        - name: config-volume
-          mountPath: /etc/vllm-router
-      volumes:
-      - name: config-volume
-        configMap:
-          name: vllm-router-config
+        env:
+        - name: MODELS
+          value: |
+            {{- range .Values.models }}
+            {{ .modelName }}=http://{{ .name }}.{{ $.Values.namespace }}.svc.cluster.local:8000,
+            {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: vllm-router
+  name: vllm-router
+  namespace: {{ .Values.namespace }}
+spec:
+  ports:
+    - port: {{ .Values.router.service.port }}
+      targetPort: vllm-port
+      name: vllm-router
+  selector:
+    app: vllm-router
