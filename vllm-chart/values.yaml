@@ -4,7 +4,7 @@ models:
   - name: vllm-llama-7b
     image: vllm/vllm-openai:latest
     command: ["/bin/sh", "-c"]
-    args: ["python3 -m vllm.entrypoints.openai.api_server --model $MODEL_NAME --tensor-parallel-size 1"]
+    args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"]
     modelName: "meta-llama/Llama-2-7b-chat-hf"
     resources:
       limits:
@@ -17,7 +17,7 @@ models:
   - name: vllm-llama-7b-gptq
     image: vllm/vllm-openai:latest
     command: ["/bin/sh", "-c"]
-    args: ["python3 -m vllm.entrypoints.openai.api_server --model $MODEL_NAME --gpu-memory-utilization 0.8 --dtype float16"]
+    args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"]
     modelName: "TheBloke/Llama-2-7B-chat-GPTQ"
     resources:
       limits:
@@ -30,7 +30,7 @@ models:
   - name: vllm-llama-13b-gptq
     image: vllm/vllm-openai:latest
     command: ["/bin/sh", "-c"]
-    args: ["python3 -m vllm.entrypoints.openai.api_server --model $MODEL_NAME --gpu-memory-utilization 0.8 --dtype float16"]
+    args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"]
     modelName: "TheBloke/Llama-2-13B-chat-GPTQ"
     resources:
       limits:

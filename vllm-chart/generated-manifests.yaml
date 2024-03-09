@@ -199,8 +199,11 @@ spec:
       containers:
       - name: vllm-container-vllm-llama-7b
         image: vllm/vllm-openai:latest
-        command: [/bin/sh -c]
-        args: [python3 -m vllm.entrypoints.openai.api_server --model $MODEL_NAME --tensor-parallel-size 1]
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"
         ports:
         - containerPort: 8000
           name: vllm-llama-7b
@@ -211,7 +214,7 @@ spec:
               key: HF_TOKEN
               name: huggingface-secret
         - name: MODEL_NAME
-          value: meta-llama/Llama-2-7B-chat-hf
+          value: meta-llama/Llama-2-7b-chat-hf
         volumeMounts:
         - name: cache-volume
           mountPath: /root/.cache/huggingface
@@ -246,8 +249,11 @@ spec:
       containers:
       - name: vllm-container-vllm-llama-7b-gptq
         image: vllm/vllm-openai:latest
-        command: [/bin/sh -c]
-        args: [python3 -m vllm.entrypoints.openai.api_server --model $MODEL_NAME --gpu-memory-utilization 0.8 --dtype float16]
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"
         ports:
         - containerPort: 8000
           name: vllm-llama-7b-gptq
@@ -293,8 +299,11 @@ spec:
       containers:
       - name: vllm-container-vllm-llama-13b-gptq
         image: vllm/vllm-openai:latest
-        command: [/bin/sh -c]
-        args: [python3 -m vllm.entrypoints.openai.api_server --model $MODEL_NAME --gpu-memory-utilization 0.8 --dtype float16]
+        command:
+          - "/bin/sh"
+          - "-c"
+        args:
+          - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"
         ports:
         - containerPort: 8000
           name: vllm-llama-13b-gptq
@@ -350,7 +359,7 @@ spec:
         env:
         - name: MODELS
           value: |
-            meta-llama/Llama-2-7B-chat-hf=http://vllm-llama-7b.default.svc.cluster.local:8000,
+            meta-llama/Llama-2-7b-chat-hf=http://vllm-llama-7b.default.svc.cluster.local:8000,
             TheBloke/Llama-2-7B-chat-GPTQ=http://vllm-llama-7b-gptq.default.svc.cluster.local:8000,
             TheBloke/Llama-2-13B-chat-GPTQ=http://vllm-llama-13b-gptq.default.svc.cluster.local:8000,
 ---

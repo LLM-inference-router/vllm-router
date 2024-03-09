@@ -17,8 +17,12 @@ spec:
       containers:
       - name: vllm-container-{{ .name }}
         image: {{ .image }}
-        command: {{ .command }}
-        args: {{ .args }}
+        command:
+          {{- range .command }}
+          - {{ . | quote }}
+          {{- end }}
+        args:
+          - {{ .args | first | quote }}
         ports:
         - containerPort: 8000
           name: {{ .name }}
