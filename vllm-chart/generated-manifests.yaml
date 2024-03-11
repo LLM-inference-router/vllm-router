@@ -121,48 +121,48 @@ apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: vllm-llama-7b
-  name: vllm-llama-7b
+    app: llama-7b
+  name: llama-7b
   namespace: default
 spec:
   ports:
   - port: 8000
-    targetPort: vllm-llama-7b
-    name: vllm-llama-7b
+    targetPort: llama-7b
+    name: llama-7b
   selector:
-    app: vllm-llama-7b
+    app: llama-7b
 ---
 # Source: vllm-chart/templates/services.yaml
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: vllm-llama-7b-gptq
-  name: vllm-llama-7b-gptq
+    app: llama-7b-gptq
+  name: llama-7b-gptq
   namespace: default
 spec:
   ports:
   - port: 8000
-    targetPort: vllm-llama-7b-gptq
-    name: vllm-llama-7b-gptq
+    targetPort: llama-7b-gptq
+    name: llama-7b-gptq
   selector:
-    app: vllm-llama-7b-gptq
+    app: llama-7b-gptq
 ---
 # Source: vllm-chart/templates/services.yaml
 apiVersion: v1
 kind: Service
 metadata:
   labels:
-    app: vllm-llama-13b-gptq
-  name: vllm-llama-13b-gptq
+    app: llama-13b-gptq
+  name: llama-13b-gptq
   namespace: default
 spec:
   ports:
   - port: 8000
-    targetPort: vllm-llama-13b-gptq
-    name: vllm-llama-13b-gptq
+    targetPort: llama-13b-gptq
+    name: llama-13b-gptq
   selector:
-    app: vllm-llama-13b-gptq
+    app: llama-13b-gptq
 ---
 # Source: vllm-chart/templates/vllm-router.yaml
 apiVersion: v1
@@ -184,20 +184,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vllm-llama-7b
+  name: llama-7b
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vllm-llama-7b
+      app: llama-7b
   template:
     metadata:
       labels:
-        app: vllm-llama-7b
+        app: llama-7b
     spec:
       containers:
-      - name: vllm-container-vllm-llama-7b
+      - name: vllm-container-llama-7b
         image: vllm/vllm-openai:latest
         command:
           - "/bin/sh"
@@ -206,7 +206,7 @@ spec:
           - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"
         ports:
         - containerPort: 8000
-          name: vllm-llama-7b
+          name: llama-7b
         env:
         - name: HUGGING_FACE_HUB_TOKEN
           valueFrom:
@@ -234,20 +234,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vllm-llama-7b-gptq
+  name: llama-7b-gptq
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vllm-llama-7b-gptq
+      app: llama-7b-gptq
   template:
     metadata:
       labels:
-        app: vllm-llama-7b-gptq
+        app: llama-7b-gptq
     spec:
       containers:
-      - name: vllm-container-vllm-llama-7b-gptq
+      - name: vllm-container-llama-7b-gptq
         image: vllm/vllm-openai:latest
         command:
           - "/bin/sh"
@@ -256,7 +256,7 @@ spec:
           - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"
         ports:
         - containerPort: 8000
-          name: vllm-llama-7b-gptq
+          name: llama-7b-gptq
         env:
         - name: HUGGING_FACE_HUB_TOKEN
           valueFrom:
@@ -284,20 +284,20 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vllm-llama-13b-gptq
+  name: llama-13b-gptq
   namespace: default
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: vllm-llama-13b-gptq
+      app: llama-13b-gptq
   template:
     metadata:
       labels:
-        app: vllm-llama-13b-gptq
+        app: llama-13b-gptq
     spec:
       containers:
-      - name: vllm-container-vllm-llama-13b-gptq
+      - name: vllm-container-llama-13b-gptq
         image: vllm/vllm-openai:latest
         command:
           - "/bin/sh"
@@ -306,7 +306,7 @@ spec:
           - "python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"
         ports:
         - containerPort: 8000
-          name: vllm-llama-13b-gptq
+          name: llama-13b-gptq
         env:
         - name: HUGGING_FACE_HUB_TOKEN
           valueFrom:
@@ -359,9 +359,9 @@ spec:
         env:
         - name: MODELS
           value: |
-            meta-llama/Llama-2-7b-chat-hf=http://vllm-llama-7b.default.svc.cluster.local:8000,
-            TheBloke/Llama-2-7B-chat-GPTQ=http://vllm-llama-7b-gptq.default.svc.cluster.local:8000,
-            TheBloke/Llama-2-13B-chat-GPTQ=http://vllm-llama-13b-gptq.default.svc.cluster.local:8000,
+            meta-llama/Llama-2-7b-chat-hf=http://llama-7b.default.svc.cluster.local:8000,
+            TheBloke/Llama-2-7B-chat-GPTQ=http://llama-7b-gptq.default.svc.cluster.local:8000,
+            TheBloke/Llama-2-13B-chat-GPTQ=http://llama-13b-gptq.default.svc.cluster.local:8000,
 ---
 # Source: vllm-chart/templates/gpu-operator-service-monitor.yaml
 apiVersion: monitoring.coreos.com/v1
@@ -393,12 +393,12 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vllm-service-monitor-vllm-llama-7b
+  name: vllm-service-monitor-llama-7b
   namespace: monitoring
 spec:
   endpoints:
   - interval: 15s
-    port: vllm-llama-7b
+    port: llama-7b
     relabelings:
     - action: replace
       regex: (.*)
@@ -410,7 +410,7 @@ spec:
   jobLabel: app.kubernetes.io/name
   selector:
     matchLabels:
-      app: vllm-llama-7b
+      app: llama-7b
   namespaceSelector:
     matchNames:
     - default
@@ -419,12 +419,12 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vllm-service-monitor-vllm-llama-7b-gptq
+  name: vllm-service-monitor-llama-7b-gptq
   namespace: monitoring
 spec:
   endpoints:
   - interval: 15s
-    port: vllm-llama-7b-gptq
+    port: llama-7b-gptq
     relabelings:
     - action: replace
       regex: (.*)
@@ -436,7 +436,7 @@ spec:
   jobLabel: app.kubernetes.io/name
   selector:
     matchLabels:
-      app: vllm-llama-7b-gptq
+      app: llama-7b-gptq
   namespaceSelector:
     matchNames:
     - default
@@ -445,12 +445,12 @@ spec:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: vllm-service-monitor-vllm-llama-13b-gptq
+  name: vllm-service-monitor-llama-13b-gptq
   namespace: monitoring
 spec:
   endpoints:
   - interval: 15s
-    port: vllm-llama-13b-gptq
+    port: llama-13b-gptq
     relabelings:
     - action: replace
       regex: (.*)
@@ -462,7 +462,7 @@ spec:
   jobLabel: app.kubernetes.io/name
   selector:
     matchLabels:
-      app: vllm-llama-13b-gptq
+      app: llama-13b-gptq
   namespaceSelector:
     matchNames:
     - default
