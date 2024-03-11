@@ -64,7 +64,7 @@ The vLLM Router consists of the following components:
    ```bash
    cd vllm-router
    docker build -t quay.io/llm_router/vllm-router:latest .
-   docker push
+   docker push quay.io/llm_router/vllm-router
    ```
 
    If you want to push the image to a different registry, update the `router.image` value in the `values.yaml` file.
