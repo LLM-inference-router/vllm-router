@@ -19,6 +19,8 @@ backend_servers = {}
 async def startup_event():
     models = os.environ.get("MODELS", "").split(",")
     for model in models:
+        # remove \n from the begin and end of the string
+        model = model.strip()
         if model:
             model_name, model_url = model.split("=")
             backend_servers[model_name] = model_url
