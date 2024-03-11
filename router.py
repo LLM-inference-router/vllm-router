@@ -14,14 +14,18 @@ logger.addHandler(console_handler)
 app = FastAPI()
 
 backend_servers = {}
-
 @app.on_event("startup")
 async def startup_event():
-    models = os.environ.get("MODELS", "").split(",")
-    for model in models:
-        if model:
-            model_name, model_url = model.split("=")
-            backend_servers[model_name] = model_url
+    raw_models = os.environ.get("MODELS", "").split(",")
+    backend_servers = {}
+    for raw_model in raw_models:
+        model = raw_model.strip()  # This removes leading and trailing whitespace, including newline characters
+        if model:  # This checks if the model string is not empty
+            try:
+                model_name, model_url = model.split("=")
+                backend_servers[model_name] = model_url
+            except ValueError as e:
+                logger.error(f"Error processing model '{model}': {e}")
     logger.info(f"Backend servers: {backend_servers}")
 
 async def proxy(request):
