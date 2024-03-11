@@ -75,6 +75,26 @@ async def post_completions(request: Request):
         status_code=response_data["status_code"],
     )
 
+@app.get("/v1/chat/completions")
+async def get_completions(request: Request):
+    logger.info("get_completions")
+    response_data = await proxy(request)
+    return Response(
+        content=response_data["content"],
+        media_type=response_data["headers"].get("Content-Type"),
+        status_code=response_data["status_code"],
+    )
+
+@app.post("/v1/chat/completions")
+async def post_completions(request: Request):
+    logger.info("post_completions")
+    response_data = await proxy(request)
+    return Response(
+        content=response_data["content"],
+        media_type=response_data["headers"].get("Content-Type"),
+        status_code=response_data["status_code"],
+    )
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
