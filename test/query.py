@@ -78,29 +78,6 @@ def run_threads(func):
     print("Difference")
     print(end_time - start_time)
 
-    threads = []
-
-
-    # print the start time of the program and end time of the program
-    print("Start time")
-    start_time = datetime.datetime.now()
-    print(start_time)
-    # Create and start 5 threads
-    for i in range(num_threads):
-        thread = threading.Thread(target=random_send_post, args=(lines,))
-        thread.start()
-        threads.append(thread)
-
-    # Wait for all threads to finish
-    for thread in threads:
-        thread.join()
-
-    print("End time")
-    end_time = datetime.datetime.now()
-    print(end_time)
-    # print the difference between the start time and end time
-    print("Difference")
-    print(end_time - start_time)
 
 # Run the threads
 print("Sending POST requests")
