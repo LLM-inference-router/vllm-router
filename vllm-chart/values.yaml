@@ -1,7 +1,7 @@
 namespace: default
 
 models:
-  - name: vllm-llama-7b
+  - name: llama-7b
     image: vllm/vllm-openai:latest
     command: ["/bin/sh", "-c"]
     args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --tensor-parallel-size 1"]
@@ -14,7 +14,7 @@ models:
         cpu: 500m
         memory: 512Mi
 
-  - name: vllm-llama-7b-gptq
+  - name: llama-7b-gptq
     image: vllm/vllm-openai:latest
     command: ["/bin/sh", "-c"]
     args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"]
@@ -27,7 +27,7 @@ models:
         cpu: 500m
         memory: 512Mi
 
-  - name: vllm-llama-13b-gptq
+  - name: llama-13b-gptq
     image: vllm/vllm-openai:latest
     command: ["/bin/sh", "-c"]
     args: ["python3 -m vllm.entrypoints.openai.api_server --model ${MODEL_NAME} --gpu-memory-utilization 0.8 --dtype float16"]
