@@ -1,7 +1,7 @@
 FROM python:3.10-slim
 
 RUN apt-get update && apt-get install -y wget curl
-COPY ./requirements.txt /app/requirements.txt
+ADD ./requirements.txt /app/requirements.txt
 WORKDIR /app
 COPY *.py /app
 EXPOSE 8000
